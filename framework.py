@@ -68,7 +68,7 @@ class Framework(Frame):
         red = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
         green = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
         blue = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
-        self.palette = list(zip(red.astype(np.float64), green.astype(np.float64), blue.astype(np.float64)))
+        self.palette = list(zip(red.astype(int), green.astype(int), blue.astype(int)))
 
 
     def changePalette(self, event):

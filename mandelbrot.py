@@ -56,51 +56,6 @@ class Mandelbrot():
         self.ymax = self.yCenter + self.yDelta
         self.xmin = self.xCenter - self.xDelta
         self.ymin = self.yCenter - self.yDelta
-        zoomed_xDelta = self.xDelta * self.zoomFactor
-        zoomed_yDelta = self.yDelta * self.zoomFactor
-        self.xmin = self.xCenter - zoomed_xDelta / 2
-        self.xmax = self.xCenter + zoomed_xDelta / 2
-        self.ymin = self.yCenter - zoomed_yDelta / 2
-        self.ymax = self.yCenter + zoomed_yDelta / 2
-        self.xDelta = zoomed_xDelta
-        self.yDelta = zoomed_yDelta
-
-    def startDrag(self, event):
-        self.lastx = event.x
-        self.lasty = event.y
-
-    def endDrag(self, event):
-        self.lastx = None
-        self.lasty = None
-
-    def dragging(self, event):
-        if self.lastx and self.lasty:
-            deltaX = event.x - self.lastx
-            deltaY = event.y - self.lasty
-            
-            # Update the center based on drag
-            self.xCenter -= deltaX * self.xScaleFactor
-            self.yCenter += deltaY * self.yScaleFactor
-            
-            # Update the view
-            self.shiftView(event)
-            
-            self.lastx = event.x
-            self.lasty = event.y
-
-    def mouseScroll(self, event):
-        current_time = time.time()
-        
-        if current_time - self.last_zoom_time < 0.3:  # 0.3 seconds rate-limit
-            return
-            
-        if event.num == 4 or event.delta > 0:  # Scroll up
-            self.zoomIn(event)
-        elif event.num == 5 or event.delta < 0:  # Scroll down
-            self.zoomOut(event)
-            
-        self.last_zoom_time = current_time  # Update the last zoom time
-
 
     def getPixels(self):
     # Create a grid of x, y coordinates
