@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 class Mandelbrot():
-    def __init__(self, canvasW, canvasH, x=-0.75, y=0, m=1.5, iterations=None, w=None, h=None, zoomFactor=0.1, multi=True):
+    def __init__(self, canvasW, canvasH, x=-0.75, y=0, m=1.5, iterations=None, w=None, h=None, zoomFactor=0.05, multi=True):
         self.w, self.h = (round(canvasW*0.9), round(canvasH*0.9)) if None in {w, h} else w, h
         self.iterations = 200 if iterations is None else iterations
         self.xCenter, self.yCenter = x, y
@@ -44,6 +44,8 @@ class Mandelbrot():
         self.xmin = self.xCenter - self.xDelta
         self.ymin = self.yCenter - self.yDelta
 
+        
+
     def zoomIn(self, event):
         self.xCenter = translate(event.x*self.xScaleFactor, 0, self.w, self.xmin, self.xmax)
         self.yCenter = translate(event.y*self.yScaleFactor, self.h, 0, self.ymin, self.ymax)
@@ -54,11 +56,55 @@ class Mandelbrot():
         self.ymax = self.yCenter + self.yDelta
         self.xmin = self.xCenter - self.xDelta
         self.ymin = self.yCenter - self.yDelta
+        zoomed_xDelta = self.xDelta * self.zoomFactor
+        zoomed_yDelta = self.yDelta * self.zoomFactor
+        self.xmin = self.xCenter - zoomed_xDelta / 2
+        self.xmax = self.xCenter + zoomed_xDelta / 2
+        self.ymin = self.yCenter - zoomed_yDelta / 2
+        self.ymax = self.yCenter + zoomed_yDelta / 2
+        self.xDelta = zoomed_xDelta
+        self.yDelta = zoomed_yDelta
+
+    def startDrag(self, event):
+        self.lastx = event.x
+        self.lasty = event.y
+
+    def endDrag(self, event):
+        self.lastx = None
+        self.lasty = None
+
+    def dragging(self, event):
+        if self.lastx and self.lasty:
+            deltaX = event.x - self.lastx
+            deltaY = event.y - self.lasty
+            
+            # Update the center based on drag
+            self.xCenter -= deltaX * self.xScaleFactor
+            self.yCenter += deltaY * self.yScaleFactor
+            
+            # Update the view
+            self.shiftView(event)
+            
+            self.lastx = event.x
+            self.lasty = event.y
+
+    def mouseScroll(self, event):
+        current_time = time.time()
+        
+        if current_time - self.last_zoom_time < 0.3:  # 0.3 seconds rate-limit
+            return
+            
+        if event.num == 4 or event.delta > 0:  # Scroll up
+            self.zoomIn(event)
+        elif event.num == 5 or event.delta < 0:  # Scroll down
+            self.zoomOut(event)
+            
+        self.last_zoom_time = current_time  # Update the last zoom time
 
 
     def getPixels(self):
     # Create a grid of x, y coordinates
-        x, y = np.meshgrid(np.linspace(self.xmin, self.xmax, self.w), np.linspace(self.ymin, self.ymax, self.h))
+        x, y = np.meshgrid(np.linspace(self.xmin, self.xmax, self.w, dtype = np.float64), np.linspace(self.ymin, self.ymax, self.h, dtype = np.float64))
 
     # Initialize complex number grid
         c = x + 1j * y

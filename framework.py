@@ -11,7 +11,7 @@ from multiprocessing import freeze_support
 import numpy as np
 
 class Framework(Frame):
-    def __init__(self, parent, h, x=-0.75, y=0, m=1.5, iterations=10**50, imgWidth=1920, imgHeight=1080, save=False, multi=True):
+    def __init__(self, parent, h, x=-0.75, y=0, m=1.5, iterations=None, imgWidth=1920, imgHeight=1080, save=False, multi=True):
         Frame.__init__(self, parent)
         self.parent = parent
         self.parent.title("Mandelbrot")
@@ -68,7 +68,7 @@ class Framework(Frame):
         red = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
         green = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
         blue = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
-        self.palette = list(zip(red.astype(int), green.astype(int), blue.astype(int)))
+        self.palette = list(zip(red.astype(np.float64), green.astype(np.float64), blue.astype(np.float64)))
 
 
     def changePalette(self, event):
