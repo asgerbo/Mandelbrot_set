@@ -1,131 +1,83 @@
 import os
-import argparse
-import sys
-import math
 import time
-import random
 from tkinter import *
 from PIL import Image, ImageTk
-from mandelbrot import Mandelbrot
+from mandelbrot import FractalRenderer  # Assuming the refactored Mandelbrot class is saved in a file named fractal_renderer.py
 from multiprocessing import freeze_support
-import numpy as np
 
-class Framework(Frame):
-    def __init__(self, parent, h, x=-0.75, y=0, m=1.5, iterations=None, imgWidth=1920, imgHeight=1080, save=False, multi=True):
-        Frame.__init__(self, parent)
+
+class FractalViewer(Frame):
+    def __init__(self, parent, canvas_size, x_center=-0.75, y_center=0, scale=1.5, max_iter=None, img_width=None, img_height=None, save_image=False, use_multiprocessing=True):
+        super().__init__(parent)
         self.parent = parent
-        self.parent.title("Mandelbrot")
+        self.parent.title("Fractal Viewer")
         self.pack(fill=BOTH, expand=1)
         self.canvas = Canvas(self)
 
-        if None in {imgWidth, imgHeight}:
-            imgWidth, imgHeight = h, h
-        if imgWidth > imgHeight:
-            ratio = imgHeight/imgWidth
-            self.canvasW, self.canvasH = h, round(h*ratio)
-        else:
-            ratio = imgWidth/imgHeight
-            self.canvasW, self.canvasH = round(h*ratio), h
+        if img_width is None or img_height is None:
+            img_width, img_height = canvas_size, canvas_size
 
-        self.fractal = Mandelbrot(self.canvasW, self.canvasH, x=x, y=y, m=m, iterations=iterations, w=imgWidth, h=imgHeight, multi=multi)
-        self.setPalette()
-        self.pixelColors = []
-        self.img = None
-        self.save = save
-        self.draw()
+        aspect_ratio = img_width / img_height
+        self.canvas_width, self.canvas_height = (canvas_size, round(canvas_size / aspect_ratio)) if img_width > img_height else (round(canvas_size * aspect_ratio), canvas_size)
 
-        parent.bind("<Button-1>", self.zoomIn)
-        parent.bind("<Button-2>", self.zoomOut) # The binding, this usually refers to the middle button, but on my mac and using the trackpad has a different meaning, so this would in fact be right click. Therefore if on windows this needs to be change to 3 and self.saveImage to 2. 
-        parent.bind("<Control-1>", self.shiftView)
-        parent.bind("<Control-3>", self.changePalette)
-        parent.bind("<Button-3>", self.saveImage)
+        self.fractal = FractalRenderer(self.canvas_width, self.canvas_height, x_center=x_center, y_center=y_center, scale=scale, max_iter=max_iter, img_width=img_width, img_height=img_height, use_multiprocessing=use_multiprocessing)
+        self.palette = [(0, 0, 0), (255, 255, 255)]
+        self.pixel_colors = []
+        self.image = None
+        self.save_image = save_image
+        self.render()
 
-    def zoomIn(self, event):
-        self.fractal.zoomIn(event)
-        self.draw()
+        parent.bind("<Button-1>", self.zoom_in)
+        parent.bind("<Button-3>", self.zoom_out)
+        parent.bind("<Control-1>", self.pan_view)
 
-    def zoomOut(self, event):
-        self.fractal.zoomOut(event)
-        self.draw()
+    def zoom_in(self, event):
+        self.fractal.zoom(event, 'in')
+        self.render()
 
-    def shiftView(self, event):
-        self.fractal.shiftView(event)
-        self.draw()
+    def zoom_out(self, event):
+        self.fractal.zoom(event, 'out')
+        self.render()
 
-    def draw(self):
+    def pan_view(self, event):
+        self.fractal.pan(event)
+        self.render()
+
+    def render(self):
         print('-' * 20)
-        start = time.time()
-        self.fractal.getPixels()
-        self.getColors()
-        self.drawPixels()
+        start_time = time.time()
+        self.fractal.generate_pixels()
+        self.assign_colors()
+        self.paint_pixels()
         self.canvas.create_image(0, 0, image=self.background, anchor=NW)
         self.canvas.pack(fill=BOTH, expand=1)
-        print("Process took {} seconds".format(round(time.time()-start, 2)))
-        print("Current coordinates (x, y, m): {}, {}, {}".format(self.fractal.xCenter, self.fractal.yCenter, self.fractal.delta))
+        print(f"Rendering took {round(time.time() - start_time, 2)} seconds")
 
-    def setPalette(self):
-        index = np.arange(256)
-        red = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
-        green = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
-        blue = 256 * (0.5 * np.sin(2 * np.pi * index / (np.random.randint(0, 128) + 128) + 256 * np.random.rand()) + 0.5)
-        self.palette = list(zip(red.astype(int), green.astype(int), blue.astype(int)))
+    def assign_colors(self):
+        self.pixel_colors = [self.palette[0] if pixel[2] == 0 else self.palette[1] for pixel in self.fractal.pixel_data]
 
+    def paint_pixels(self):
+        img = Image.new('RGB', (self.fractal.img_width, self.fractal.img_height), "black")
+        pixel_map = img.load()
+        for idx, pixel in enumerate(self.fractal.pixel_data):
+            pixel_map[int(pixel[0]), int(pixel[1])] = self.pixel_colors[idx]
+        self.image = img
+        if self.save_image:
+            self.save_image_to_disk()
+        photo_img = ImageTk.PhotoImage(img.resize((self.canvas_width, self.canvas_height)))
+        self.background = photo_img
 
-    def changePalette(self, event):
-        self.setPalette()
-        self.pixelColors = []
-        self.getColors()
-        self.drawPixels()
-        self.canvas.create_image(0, 0, image=self.background, anchor=NW)
-        self.canvas.pack(fill=BOTH, expand=1)
-
-    def getColors(self):
-        self.pixelColors = np.array(self.fractal.pixels)[:, 2] % 256
-        self.pixelColors = np.array([self.palette[i] for i in self.pixelColors])
-
-
-
-    def drawPixels(self):
-        img_array = np.zeros((self.fractal.h, self.fractal.w, 3), dtype=np.uint8)
-        for index, p in enumerate(self.fractal.pixels):
-            img_array[int(p[1]), int(p[0])] = self.pixelColors[index]
-        img = Image.fromarray(img_array, 'RGB')
-        if self.save:
-            self.saveImage(None)
-        photoimg = ImageTk.PhotoImage(img.resize((self.canvasW, self.canvasH)))
-        self.background = photoimg
-
-    def saveImage(self, event):
-        self.img.save("output/{}.png".format(time.strftime("%Y-%m-%d-%H:%M:%S")), "PNG", optimize=True)
-
-
-def clamp(arr):
-    return np.clip(arr, 0, 255)
+    def save_image_to_disk(self):
+        self.image.save(f"output/{time.strftime('%Y-%m-%d-%H:%M:%S')}.png", "PNG", optimize=True)
 
 
 def main():
-    master = Tk()
-    height = round(master.winfo_screenheight()*0.9)
-    parser = argparse.ArgumentParser(description='Generate the Mandelbrot set')
-    parser.add_argument('-i', '--iterations', type=int, help='The number of iterations done for each pixel. Higher is more accurate but slower.')
-    parser.add_argument('-x', type=float, help='The x-center coordinate of the frame.')
-    parser.add_argument('-y', type=float, help='The y-center coordinate of the frame.')
-    parser.add_argument('-m', '--magnification', type=float, help='The magnification level of the frame.')
-    parser.add_argument('-wi', '--width', type=int, help='The width of the image.')
-    parser.add_argument('-he', '--height', type=int, help='The width of the image.')
-    parser.add_argument('-s', '--save', action='store_true', help='Save the generated image.')
-    parser.add_argument('-nm', '--noMulti', action='store_false', help="Don't use multiprocessing.")
-    args = parser.parse_args()
-    if None not in [args.x, args.y, args.magnification]:
-        render = Framework(master, height, x=args.x, y=args.y, m=args.magnification, multi=args.noMulti,
-                           iterations=args.iterations, imgWidth=args.width, imgHeight=args.height, save=args.save)
-    else:
-        if not all(arg is None for arg in [args.x, args.y, args.magnification]):
-            print("Arguments ignored. Please provide all of x, y, & m.")
-        render = Framework(master, height, multi=args.noMulti, iterations=args.iterations,
-                           imgWidth=args.width, imgHeight=args.height, save=args.save)
-    master.geometry("{}x{}".format(render.canvasW, render.canvasH))
-    master.mainloop()
+    root = Tk()
+    screen_height = round(root.winfo_screenheight() * 0.9)
+    app = FractalViewer(root, screen_height)
+    root.geometry(f"{app.canvas_width}x{app.canvas_height}")
+    root.mainloop()
+
 
 if __name__ == '__main__':
     freeze_support()

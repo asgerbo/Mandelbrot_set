@@ -1,0 +1,46 @@
+Prerequisites for the Mandelbrot Set - before diving into the programming part of this.
+
+The Mandelbrot Set is a two-dimensional set with a relatively simple mathematical formulation/structure. 
+
+We can define the set on the complex plane, as the complex numbers c for the function f_c(x) = z^2 + c does not diverge to infinity when iterated from z = 0. 
+
+The Mandelbrot Set have both stable, unstable and semi-stable points on the graph of possibilities. Meaning, we can zoom in on these semi-stable points that yield complex, and aesthetic appealing structures and fractal structures. 
+
+We can define a decision boundary for which the Mandelbrot set either converges or diverges - it can be helpful for understanding to draw a 1-D plane, and show how the bounadries work in this case. On the 1-D plane, the boundary will be from [-1, 1], and when extended to 2-D planes, the boundary becomes a sphere. With the introduction of complex numbers, the iteration becomes the Mandelbrot Set. 
+
+As a definition; The Mandelbrot Set is the set of values of c in the complex plane for which the orbit of the critical point z = 0 under iteration of the quadratic map; z_{n + 1} = z_n^2 + c remains bounded. Thus a complex number c is a member of the Mandelbrot Set if, when starting with z_0 = 0 and applying the iteration repeatedly, the absolute value of z_n remains bounded for all n > 0. 
+
+
+
+
+
+
+##################################################
+Programming part
+##################################################
+
+We will need an asortment of different packages. 
+
+Initial thoughts; 
+
+1. Class definition for addtion of complex numbers to some function.
+
+2. Functions for mapping - coloring as well, since we do not want a binary plot of white + black
+
+3. Vectorization and parallellization of inputs to improve computational ability - this comes in hand after the number generation has taken place
+
+4. Class definition for the mandelbrot it self, this will help when calling the functions within the class to compute the and draw the mandelbrot in another program. 
+
+5. Maybe have separate mandelbrot class and mandelbrot_explorer - one who computes and one who plots with specific parameters already set. 
+
+6. Click & scroll interactively function. 
+
+7. Function defining colors for the plot
+
+8. Cartesian plane (this is just the 2-D plane). For expressional terms it would be better to include this than saying the 2-D plane. 
+
+
+
+
+
+
