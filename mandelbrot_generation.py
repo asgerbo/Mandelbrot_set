@@ -5,7 +5,7 @@ convert = lambda value, min1, max1, min2, max2: min2 + ((value - min1) / (max1 -
 
 class Mandelbrot_Fractal:
     """
-    I initialize the class with the __init__ statement. I set the default values for all the parameters I use in the class. Furthermore i set the aspect ratio to 16:9 by multipying both the width and height of the canvas created in the framework.py file. 
+    Initializing the class with the __init__ statement. Using classes it is important to set the values to a specific value or None, if the value can be adjusted later on. 
     """
     def __init__(self, canvas_width, canvas_height, x_center = None, y_center = None, scale = None, max_iter = None, img_width = None, img_height = None):
         self.img_width = np.round(canvas_width).astype(int)
@@ -19,7 +19,7 @@ class Mandelbrot_Fractal:
 
     def update_bounds(self):
         """
-        These are the max and min values for the canvas. I use the scale and aspect ratio to calculate the max and min values for the x and y axis. 
+        These are the bounds of the canvas.  
         """
         self.x_max = self.x_center + self.scale
         self.x_min = self.x_center - self.scale
@@ -28,7 +28,7 @@ class Mandelbrot_Fractal:
 
     def generate_pixels(self):
         """
-        This function generates the pixels for the mandelbrot set. I use a combination of packages here. The meshgrid function is rather convenient for this use case since it creates a grid of coordinates. I then use the column_stack function to stack the x and y coordinates together.
+        This function generates the pixels for the mandelbrot set. I use a combination of packages here. The meshgrid function is rather convenient for this use case since it creates a grid of coordinates. I then use the column_stack function to stack the x and y coordinates together. 
 
         I then use the starmap function from the multiprocessing package to calculate the escape time for each pixel. The starmap function is a bit like the map function, but it takes multiple arguments.
         """
