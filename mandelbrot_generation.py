@@ -1,52 +1,85 @@
-from multiprocessing import Pool
+import time
 import numpy as np
+from tkinter import Tk, Canvas, BOTH
+from PIL import Image, ImageTk
+from multiprocessing import Pool, freeze_support
+import colorsys
 
-convert = lambda value, min1, max1, min2, max2: min2 + ((value - min1) / (max1 - min1)) * (max2 - min2)
+background = None
 
-class Mandelbrot_Fractal:
+reshape = lambda value, minimum_x, maximum_x, minimum_y, maximum_y: minimum_y + (value - minimum_x) / (maximum_x - minimum_x) * (maximum_y - minimum_y)
+
+def calculate_limits(x_origin, y_origin, scale, aspect_ratio):
     """
-    Initializing the class with the __init__ statement. Using classes it is important to set the values to a specific value or None, if the value can be adjusted later on. 
+    Calculating the limits for the cartesian plane (2-D). 
     """
-    def __init__(self, canvas_width, canvas_height, x_center = None, y_center = None, scale = None, max_iter = None, img_width = None, img_height = None):
-        self.img_width = np.round(canvas_width).astype(int)
-        self.img_height = np.round(canvas_height).astype(int)
-        self.max_iter = 1000
-        self.x_center = x_center
-        self.y_center = y_center
-        self.aspect_ratio = 16 / 9
-        self.scale = scale
-        self.update_bounds()
+    y_upper = y_origin + scale / aspect_ratio
+    x_upper = x_origin + scale
+    y_lower = y_origin - scale / aspect_ratio
+    x_lower = x_origin - scale
+    return x_lower, x_upper, y_lower, y_upper
 
-    def update_bounds(self):
-        """
-        These are the bounds of the canvas.  
-        """
-        self.x_max = self.x_center + self.scale
-        self.x_min = self.x_center - self.scale
-        self.y_max = self.y_center + self.scale / self.aspect_ratio
-        self.y_min = self.y_center - self.scale / self.aspect_ratio
+def calculate_escape_time(x, y, x_lower, x_upper, y_upper, y_lower, maximum_iterations, frame_dimensions_x, frame_dimensions_y):
+    """
+    Usage of the escape time algorithm, which stops the iteration if the the sum of the real and imaginary parts exceed 4, it will no longer be a part of the set. So we will return the values for that specific point if that happens for the specific iteration the loop is doing. 
+    """
+    real_part = reshape(x, 0, frame_dimensions_x, x_lower, x_upper)
+    imaginary_part = reshape(y, 0, frame_dimensions_y, y_upper, y_lower)
+    complex_number = complex(real_part, imaginary_part) 
+    z_value = 0
 
-    def generate_pixels(self):
-        """
-        This function generates the pixels for the mandelbrot set. I use a combination of packages here. The meshgrid function is rather convenient for this use case since it creates a grid of coordinates. I then use the column_stack function to stack the x and y coordinates together. 
+    for i in range(0, maximum_iterations):
+        if abs(z_value + complex_number) > 4:
+            return x, y, i
+        z_value = z_value * z_value + complex_number
+    return x, y, 0
 
-        I then use the starmap function from the multiprocessing package to calculate the escape time for each pixel. The starmap function is a bit like the map function, but it takes multiple arguments.
-        """
-        x_vals = np.linspace(0, self.img_width - 1, self.img_width)
-        y_vals = np.linspace(0, self.img_height - 1, self.img_height)
-        x_grid, y_grid = np.meshgrid(x_vals, y_vals)
-        coords = np.column_stack((x_grid.ravel(), y_grid.ravel()))
+def generate_pixel_map(frame_dimensions_x, frame_dimensions_y, x_lower, x_upper, y_lower, y_upper, maximum_iterations):
+    """
+    Here i use Numpy's library to generate the map for which the pixels should be colored. I use a combination of linspace and meshgrid, since these are extremely convenient ways of representing a plot and then mapping the colors to the coordinates. Meshgrid takes 1-D arrays and turns them into n-D arrays. 
+    """
+    x_range = np.linspace(0, frame_dimensions_x - 1, frame_dimensions_x)
+    y_range = np.linspace(0, frame_dimensions_y - 1, frame_dimensions_y)
+    x_matrix, y_matrix = np.meshgrid(x_range, y_range)
+    points = np.column_stack((x_matrix.flatten(), y_matrix.flatten()))
 
-        with Pool() as pool:
-            self.pixel_data = pool.starmap(self.calculate_escape_time, coords)
+    with Pool() as pool:
+        return pool.starmap(calculate_escape_time, [(x, y, x_lower, x_upper, y_upper, y_lower, maximum_iterations, frame_dimensions_x, frame_dimensions_y) for x, y in points])
 
-    def calculate_escape_time(self, x, y):
-        real = convert(x, 0, self.img_width, self.x_min, self.x_max)
-        imag = convert(y, 0, self.img_height, self.y_max, self.y_min)
-        c = complex(real, imag)
-        z = c
-        for k in range(1, self.max_iter):
-            if abs(z) > 2:
-                return (x, y, k)
-            z = z * z + c
-        return (x, y, 0)
+def render(canvas, canvas_width, canvas_height, pixel_data):
+    """
+    Here i use some of the features both from Tkinter and Pillow to generate the image. Also i map the colors to each of the iteration, which returned (x, y, i) or (x, y, 0). Furthermore i print the time to took to render the plot, since I have been testing different computations to improve speed and having a point of reference is always a good idea.
+    """
+    global background
+    start_time = time.time()
+    img = Image.new('RGB', (canvas_width, canvas_height))
+    pixels = img.load()
+
+    for x, y, iteration in pixel_data:
+        color = (0, 0, 0) if iteration == 0 else tuple(int(c * 255) for c in colorsys.hsv_to_rgb(iteration / 1000, 1, 1))
+        pixels[x, y] = color
+
+    background = ImageTk.PhotoImage(img)
+    canvas.create_image(0, 0, image = background, anchor='nw')
+    canvas.pack(fill = 'both', expand = 1)
+    print(f"Rendering took {time.time() - start_time:.2f} seconds")
+
+if __name__ == '__main__':
+    """
+    Now the conclusion enter the picture. I generate the canvas using Tkinter and define the sequence in which the plotting should be done. I also use freeze_support() since my program was crashing if this was not included. This was very weird to me since the documentation said that this was for windows only, but it crashed as well on my mac. 
+    """
+    freeze_support()
+    generate = Tk()
+    aspect_ratio = 16 / 9
+    canvas_dimensions = round(generate.winfo_screenheight() * 1.5)
+    canvas_width = canvas_dimensions
+    canvas_height = round(canvas_dimensions / aspect_ratio)
+    canvas = Canvas(generate)
+    canvas.pack(fill=BOTH, expand=1)
+
+    pixel_data = generate_pixel_map(canvas_width, canvas_height, * calculate_limits(-0.5, 0, 2.1, aspect_ratio), 1000)
+    render(canvas, canvas_width, canvas_height, pixel_data)
+
+    generate.title("Fractal Viewer")
+    generate.geometry(f"{canvas_width}x{canvas_height}")
+    generate.mainloop()
