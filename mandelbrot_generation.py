@@ -7,10 +7,10 @@ class Mandelbrot_Fractal:
     """
     I initialize the class with the __init__ statement. I set the default values for all the parameters I use in the class. Furthermore i set the aspect ratio to 16:9 by multipying both the width and height of the canvas created in the framework.py file. 
     """
-    def __init__(self, canvas_width, canvas_height, x_center = None, y_center = None, scale = None, max_iter = 1000, img_width = None, img_height = None):
+    def __init__(self, canvas_width, canvas_height, x_center = None, y_center = None, scale = None, max_iter = None, img_width = None, img_height = None):
         self.img_width = np.round(canvas_width).astype(int)
         self.img_height = np.round(canvas_height).astype(int)
-        self.max_iterations = max_iter if max_iter else 500
+        self.max_iter = 1000
         self.x_center = x_center
         self.y_center = y_center
         self.aspect_ratio = 16 / 9
@@ -44,10 +44,9 @@ class Mandelbrot_Fractal:
         real = convert(x, 0, self.img_width, self.x_min, self.x_max)
         imag = convert(y, 0, self.img_height, self.y_max, self.y_min)
         c = complex(real, imag)
-        z = complex(real, imag)
-        for i in range(1, self.max_iterations):
+        z = c
+        for k in range(1, self.max_iter):
             if abs(z) > 2:
-                return (x, y, i)
+                return (x, y, k)
             z = z * z + c
         return (x, y, 0)
-    

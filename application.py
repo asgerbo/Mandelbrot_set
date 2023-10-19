@@ -46,19 +46,15 @@ class Mandelbrot_Viewer(Frame):
         """
         Create an empty list for the pixel colors. I then loop through the pixel data and assign the colors to the pixels. I use the palette to assign the colors. The palette is a list of tuples, where each tuple contains the values for the color. The first tuple is the color for the pixels that are in the mandelbrot set, and the second tuple is the color for the pixels that are not in the mandelbrot set.
 
-        This is important, since we are essentially getting 256 * 256 * 256 = 16777216 possible colors to plot on the plane. For this case it is not nessecary since the amount of computations will never reach this amount. But I have done this to show the increasing complexitity of the set. Also here there comes the issue of precision, because as far as i know, we can only be so precise even though the set is infinite.
+        This is important, since we are essentially getting 256 * 256 * 256 = 16777216 possible colors to plot on the plane. For this case it is not nessecary since the amount of computations will never reach this amount. But I have done this to show the increasing complexitity of the set. Also here there comes the issue of precision, because as far as i know, we can only be so precise for a set that is infinite. 
         """
         self.pixel_colors = []
-        for pixel in self.fractal.pixel_data:
-            x, y, iteration_count = pixel
+        for x, y, iteration_count in self.fractal.pixel_data:
             if iteration_count == 0:
                 color = self.palette[0]
             else:
-                hue = iteration_count / self.fractal.max_iterations
-                saturation = 1.0
-                value = 1.0 if iteration_count < self.fractal.max_iterations else 0
-                r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(hue, saturation, value)]
-                color = (r, g ,b)
+                r, g, b = [int(c * 255) for c in colorsys.hsv_to_rgb(iteration_count / self.fractal.max_iter, 1.0, 1.0 if iteration_count < self.fractal.max_iter else 0)]
+                color = (r, g, b)
             self.pixel_colors.append(color)
 
     def paint_pixels(self):
