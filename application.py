@@ -1,8 +1,7 @@
-import os
 import time
 from tkinter import *
 from PIL import Image, ImageTk
-from mandelbrot import Mandelbrot_Fractal
+from mandelbrot_generation import Mandelbrot_Fractal
 from multiprocessing import freeze_support
 import colorsys
 
@@ -11,7 +10,7 @@ class Mandelbrot_Viewer(Frame):
     """
     This is the main class for the Mandelbrot Viewer. I use the __init__ statement to initialize the class. The super function states that this is a child class which comes from the frame class. This allows me to use tkinter methods and options that are common to all tkinter widgets. This one is a bit different, since we have set values for the x_center, y_center, scale, max_iter, img_width, img_height and use_multiprocessing. Using x_center = -0.5, y_center = 0 and scale = 2.1, seems to be good starting points after having played around with the values. A scale too high, and the set will be too small, and a scale too low, and the set will appear too big. 
     """
-    def __init__(self, parent, canvas_size, x_center = -0.5, y_center = 0, scale = 2.1, max_iter = None, img_width = None, img_height = None,  use_multiprocessing=True):
+    def __init__(self, parent, canvas_size, x_center = -0.5, y_center = 0, scale = 2.1, max_iter = None, img_width = None, img_height = None):
         super().__init__(parent)
         self.parent = parent
         self.parent.title("Fractal Viewer")
@@ -24,7 +23,7 @@ class Mandelbrot_Viewer(Frame):
         aspect_ratio = 16 / 9
         self.canvas_width, self.canvas_height = (canvas_size, round(canvas_size / aspect_ratio)) if img_width > img_height else (round(canvas_size * aspect_ratio), canvas_size)
 
-        self.fractal = Mandelbrot_Fractal(self.canvas_width, self.canvas_height, x_center=x_center, y_center=y_center, scale=scale, max_iter=max_iter, img_width=img_width, img_height=img_height, use_multiprocessing=use_multiprocessing)
+        self.fractal = Mandelbrot_Fractal(self.canvas_width, self.canvas_height, x_center=x_center, y_center=y_center, scale=scale, max_iter=max_iter, img_width=img_width, img_height=img_height)
         self.palette = [(0, 0, 0), (255, 255, 255)]
         self.pixel_colors = []
         self.image = None
